@@ -26,6 +26,8 @@
        width:clamp(10px,2.8vw,14px);height:clamp(10px,2.8vw,14px);border-radius:50%;
        background:#fff;border:3px solid var(--pointer);z-index:7}
   .rotor{transition:transform 6.2s cubic-bezier(.12,.11,0,1)}
+
+  /* מודאל זכייה */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:clamp(8px,3vw,16px)}
   .modal.show{display:flex}
   .modal .box{background:#1a1a1a;color:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.5);
@@ -50,6 +52,7 @@
     </div>
   </div>
 
+  <!-- מודאל -->
   <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle">
     <div class="box">
       <div id="mtitle" class="title">זכית !</div>
@@ -59,6 +62,7 @@
   </div>
 
 <script>
+/* ===== קונפיג עם כפילויות ===== */
 const CONFIG = {
   wheelSize: 760,
   spins: 6,
@@ -75,6 +79,7 @@ const CONFIG = {
   ]
 };
 
+/* ===== קנבס ובסיס ציור ===== */
 const canvas = document.getElementById('wheel');
 const ctx = canvas.getContext('2d');
 const dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -88,6 +93,43 @@ const radius = size/2 - 14;
 const count = CONFIG.prizes.length;
 const segAngle = 360 / count;
 
+/* עיטוף טקסט לשתי שורות במידת הצורך */
+function wrap(ctx, text, x, y, maxW, lh){
+  const words = text.split(' '); let line='', lines=[];
+  for (let i=0;i<words.length;i++){
+    const t = line + words[i] + ' ';
+    if (ctx.measureText(t).width > maxW && i>0){ lines.push(line.trim()); line = words[i] + ' '; }
+    else line = t;
+  }
+  lines.push(line.trim()); const total=(lines.length-1)*lh;
+  lines.forEach((l,i)=> ctx.fillText(l, x, y - total/2 + i*lh));
+}
+
+/* פונקציה שמתאימה פונט לטקסט כך שייכנס לעיגול נתון */
+function fitTextInCircle(ctx, text, maxDiameterPx, opts = {}) {
+  const padding = opts.padding ?? 10;         // שוליים פנימיים
+  const maxSize = opts.maxSize ?? 64;         // פונט מקסימלי
+  const minSize = opts.minSize ?? 16;         // פונט מינימלי
+  const fontFamily = opts.fontFamily ?? 'Heebo, Arial';
+  const fontWeight = opts.fontWeight ?? 'bold';
+
+  const maxWidth = maxDiameterPx - padding*2;
+  let size = maxSize;
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  while (size >= minSize) {
+    ctx.font = `${fontWeight} ${size}px ${fontFamily}`;
+    const w = ctx.measureText(text).width;
+    const h = size; // קירוב לגובה שורה
+    if (w <= maxWidth && h <= maxWidth) break;
+    size -= 1;
+  }
+  return size;
+}
+
+/* ציור גלגל */
 function drawWheel(){
   ctx.clearRect(0,0,size,size);
   ctx.save(); ctx.translate(center, center);
@@ -97,14 +139,17 @@ function drawWheel(){
     const endDeg   = startDeg + segAngle;
     const start = startDeg*Math.PI/180, end = endDeg*Math.PI/180;
 
+    // פלח
     ctx.beginPath(); ctx.moveTo(0,0);
     ctx.fillStyle = (CONFIG.prizes[i].color === "white") ? "#ffffff" : "#ff4f87";
     ctx.arc(0,0,radius,start,end,false);
     ctx.closePath(); ctx.fill();
 
+    // קו גבול
     ctx.beginPath(); ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 2;
     ctx.arc(0,0,radius,start,end,false); ctx.stroke();
 
+    // טקסט בפלח — גדול וברור
     const mid = startDeg + segAngle/2;
     const tx = Math.cos(mid*Math.PI/180)*(radius*0.66);
     const ty = Math.sin(mid*Math.PI/180)*(radius*0.66);
@@ -117,40 +162,43 @@ function drawWheel(){
     ctx.restore();
   }
 
-  // מרכז עם טקסט "לחצו עליי" מוגדל + הצללה
+  // === מרכז עם טקסט "לחצו עליי" שנכנס תמיד לעיגול ===
+  const centerRadius = radius * 0.18; // גודל העיגול האמצעי
   ctx.beginPath();
-  ctx.arc(0,0,radius*0.18,0,Math.PI*2);
+  ctx.arc(0,0,centerRadius,0,Math.PI*2);
   ctx.fillStyle = '#111';
   ctx.fill();
-  ctx.lineWidth=4;
-  ctx.strokeStyle='#000';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#000';
   ctx.stroke();
 
-  ctx.fillStyle = '#fff';
+  // הצללה עדינה לטקסט
   ctx.shadowColor = 'rgba(255,255,255,0.8)';
   ctx.shadowBlur = 6;
-  ctx.font = `bold ${Math.max(34, Math.min(52, window.innerWidth * 0.11))}px Heebo, Arial`;
+
+  const fitted = fitTextInCircle(ctx, 'לחצו עליי', centerRadius*2, {
+    padding: 8,
+    maxSize: Math.max(34, Math.min(64, window.innerWidth * 0.12)),
+    minSize: 16,
+    fontFamily: 'Heebo, Arial',
+    fontWeight: 'bold'
+  });
+
+  ctx.font = `bold ${fitted}px Heebo, Arial`;
+  ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('לחצו עליי', 0, 0);
+
+  // כיבוי הצללה
   ctx.shadowBlur = 0;
 
   ctx.restore();
 }
 
-function wrap(ctx, text, x, y, maxW, lh){
-  const words = text.split(' '); let line='', lines=[];
-  for (let i=0;i<words.length;i++){
-    const t = line + words[i] + ' ';
-    if (ctx.measureText(t).width > maxW && i>0){ lines.push(line.trim()); line = words[i] + ' '; }
-    else line = t;
-  }
-  lines.push(line.trim()); const total=(lines.length-1)*lh;
-  lines.forEach((l,i)=> ctx.fillText(l, x, y - total/2 + i*lh));
-}
-
 drawWheel();
 
+/* סיבוב: בוחרים אינדקס ואז מסובבים בדיוק למרכז הפלח שמתחת לחץ */
 const rotor = document.getElementById('rotor');
 rotor.style.transitionDuration = CONFIG.durationSec + 's';
 let spun = false;
@@ -158,9 +206,9 @@ let spun = false;
 function spin(){
   if(spun) return; spun = true;
   const index = Math.floor(Math.random()*count);
-  const centerAngle = -90 + (index + 0.5) * segAngle;
+  const centerAngle = -90 + (index + 0.5) * segAngle; // מרכז הפלח
   const full = CONFIG.spins * 360;
-  const targetRotation = full - 90 - centerAngle;
+  const targetRotation = full - 90 - centerAngle; // יישור לחץ למעלה
   requestAnimationFrame(()=>{ rotor.style.transform = `rotate(${targetRotation}deg)`; });
   rotor.addEventListener('transitionend', ()=>{
     document.getElementById('mcoupon').textContent = CONFIG.prizes[index].coupon;
@@ -168,6 +216,7 @@ function spin(){
   }, { once:true });
 }
 
+/* אוטו-ספין + טאפּ לגיבוי + ציור מחדש בעת שינוי גודל */
 window.addEventListener('load', ()=>{ setTimeout(spin, 120); }, {once:true});
 document.querySelector('.wheel-wrap').addEventListener('click', ()=>{ if(!spun) spin(); }, {passive:true});
 window.addEventListener('resize', ()=>{ drawWheel(); }, {passive:true});
