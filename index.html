@@ -1,88 +1,169 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="he" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>גלגל מזל</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>גלגל מזל | קבלי את ההטבה</title>
 <style>
-  body {
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background: #f8f8f8;
-    font-family: Arial, sans-serif;
+  :root{
+    /* גודל גלגל דינמי: בין 280px ל-560px, לפי רוחב המסך */
+    --size: clamp(280px, 85vw, 560px);
+    --bg:#0b0b0b; --ink:#fff; --pink:#ff4f87; --white:#fff; --pointer:#000;
+    --shadow:0 14px 36px rgba(0,0,0,.35);
   }
-  #wheel {
-    width: 300px;
-    height: 300px;
-    border-radius: 50%;
-    border: 5px solid #333;
-    background: conic-gradient(#ff4d4d 0deg 60deg, #4dff4d 60deg 120deg, #4d4dff 120deg 180deg, #ffff4d 180deg 240deg, #ff4dff 240deg 300deg, #4dffff 300deg 360deg);
-    transition: transform 4s ease-out;
-  }
-  #spinBtn {
-    position: absolute;
-    padding: 10px 20px;
-    background: #333;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 18px;
-  }
-  #modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    justify-content: center;
-    align-items: center;
-  }
-  #modalContent {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    text-align: center;
-    font-size: 20px;
-  }
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Heebo,Assistant,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  .wrap{min-height:100svh;display:grid;place-items:center;padding:clamp(10px,4vw,22px)}
+  .card{background:#111;border-radius:16px;box-shadow:var(--shadow);padding:clamp(12px,3.5vw,18px);max-width:min(94vw,920px)}
+  h1{margin:0 0 6px;font-size:clamp(18px,4.5vw,28px)}
+  p.lead{margin:0 0 8px;opacity:.8;font-size:clamp(12px,3.5vw,16px)}
+  .wheel-wrap{position:relative;width:var(--size);aspect-ratio:1/1;display:grid;place-items:center;margin-top:6px}
+  canvas{width:100%;height:100%;display:block}
+  /* חץ גדול יותר לנייד */
+  .pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+           width:0;height:0;border-left:clamp(10px,2.8vw,18px) solid transparent;
+           border-right:clamp(10px,2.8vw,18px) solid transparent;
+           border-bottom:clamp(20px,5vw,34px) solid var(--pointer);
+           filter:drop-shadow(0 2px 0 rgba(0,0,0,.45));z-index:6}
+  .hub{position:absolute;top:clamp(10px,2.5vw,18px);left:50%;transform:translateX(-50%);
+       width:clamp(10px,2.8vw,14px);height:clamp(10px,2.8vw,14px);border-radius:50%;
+       background:#fff;border:3px solid var(--pointer);z-index:7}
+  .rotor{transition:transform 6.2s cubic-bezier(.12,.11,0,1)}
+
+  /* מודאל */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:clamp(8px,3vw,16px)}
+  .modal.show{display:flex}
+  .modal .box{background:#1a1a1a;color:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.5);
+              padding:clamp(16px,4.5vw,24px);max-width:min(92vw,520px);text-align:center}
+  .title{font-size:clamp(20px,6vw,28px);font-weight:900;margin:0 0 6px}
+  .desc{opacity:.95;margin:0 0 10px;font-size:clamp(14px,4vw,18px)}
+  .coupon{display:inline-block;margin:6px 0 2px;padding:clamp(8px,2.6vw,10px) clamp(12px,3.6vw,16px);
+          border:2px dashed var(--pink);border-radius:12px;font-weight:800;letter-spacing:.5px;
+          color:var(--pink);background:#2a2a2a;font-size:clamp(16px,5vw,20px)}
 </style>
 </head>
 <body>
-
-<div id="wheel"></div>
-<button id="spinBtn">סובב</button>
-
-<div id="modal">
-  <div id="modalContent">
-    <p>זכית!</p>
-    <p>למימוש העתיקי את הקופון:</p>
-    <h2>WIN123</h2>
+  <div class="wrap">
+    <div class="card">
+      <h1>גלגל המזל שלך 🎁</h1>
+      <p class="lead">הגלגל יסתובב אוטומטית ויחשוף את ההטבה שלך.</p>
+      <div class="wheel-wrap">
+        <div class="pointer" aria-hidden="true"></div>
+        <div class="hub" aria-hidden="true"></div>
+        <div id="rotor" class="rotor"><canvas id="wheel" width="760" height="760" aria-label="גלגל מזל"></canvas></div>
+      </div>
+    </div>
   </div>
-</div>
+
+  <!-- מודאל -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle">
+    <div class="box">
+      <div id="mtitle" class="title">זכית !</div>
+      <div id="mdesc" class="desc">למימוש העתיקי את הקופון</div>
+      <div id="mcoupon" class="coupon"></div>
+    </div>
+  </div>
 
 <script>
-  const wheel = document.getElementById('wheel');
-  const spinBtn = document.getElementById('spinBtn');
-  const modal = document.getElementById('modal');
+/* ===== קונפיג – מותאם מובייל/דסקטופ ===== */
+const CONFIG = {
+  // הקנבס מקבל פיזית 760px (חד ומדויק), אבל ה-CSS מכווץ/מגדיל לפי --size
+  wheelSize: 760,
+  spins: 6,
+  durationSec: 6.2,
+  prizes: [
+    { label: "20% הנחה", coupon: "WIN20", color: "pink" },
+    { label: "15% הנחה", coupon: "WIN15", color: "white" },
+    { label: "50₪ מתנה", coupon: "WIN50", color: "pink" },
+    { label: "75₪ מתנה", coupon: "WIN75", color: "white" },
+    { label: "10% הנחה", coupon: "WIN10", color: "pink" },
+    { label: "20% הנחה", coupon: "WIN20", color: "white" },
+    { label: "15% הנחה", coupon: "WIN15", color: "pink" },
+    { label: "50₪ מתנה", coupon: "WIN50", color: "white" }
+  ]
+};
 
-  spinBtn.addEventListener('click', () => {
-    const degree = Math.floor(2000 + Math.random() * 2000);
-    wheel.style.transform = `rotate(${degree}deg)`;
-    setTimeout(() => {
-      modal.style.display = 'flex';
-    }, 4000);
-  });
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const dpr = Math.max(1, window.devicePixelRatio || 1);
+canvas.width = CONFIG.wheelSize * dpr;
+canvas.height = CONFIG.wheelSize * dpr;
+ctx.scale(dpr, dpr);
 
-  modal.addEventListener('click', () => {
-    modal.style.display = 'none';
-  });
+const size = CONFIG.wheelSize;
+const center = size/2;
+const radius = size/2 - 14;
+const count = CONFIG.prizes.length;
+const segAngle = 360 / count;
+
+/* ציור */
+function drawWheel(){
+  ctx.clearRect(0,0,size,size);
+  ctx.save(); ctx.translate(center, center);
+  for(let i=0;i<count;i++){
+    const startDeg = -90 + i*segAngle;
+    const endDeg = startDeg + segAngle;
+    const start = startDeg*Math.PI/180, end = endDeg*Math.PI/180;
+
+    // פלח
+    ctx.beginPath(); ctx.moveTo(0,0);
+    ctx.fillStyle = (CONFIG.prizes[i].color === "white") ? "#ffffff" : "#ff4f87";
+    ctx.arc(0,0,radius,start,end,false);
+    ctx.closePath(); ctx.fill();
+
+    // קו גבול
+    ctx.beginPath(); ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 2;
+    ctx.arc(0,0,radius,start,end,false); ctx.stroke();
+
+    // טקסט – גודל דינמי למובייל
+    const mid = startDeg + segAngle/2;
+    const tx = Math.cos(mid*Math.PI/180)*(radius*0.66);
+    const ty = Math.sin(mid*Math.PI/180)*(radius*0.66);
+    ctx.save(); ctx.translate(tx,ty); ctx.rotate((mid+90)*Math.PI/180);
+    ctx.fillStyle = (CONFIG.prizes[i].color === "white") ? "#000" : "#fff";
+    const fontPx = Math.max(14, Math.min(22, (window.innerWidth/24))); // 14–22px
+    ctx.font = `800 ${fontPx}px Heebo, Arial`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    wrap(ctx, CONFIG.prizes[i].label, 0, 0, radius*0.46, fontPx*1.15);
+    ctx.restore();
+  }
+  // מרכז
+  ctx.beginPath(); ctx.arc(0,0,radius*0.18,0,Math.PI*2);
+  ctx.fillStyle = '#111'; ctx.fill(); ctx.lineWidth=4; ctx.strokeStyle='#000'; ctx.stroke();
+  ctx.restore();
+}
+function wrap(ctx, text, x, y, maxW, lh){
+  const words = text.split(' '); let line='', lines=[];
+  for (let i=0;i<words.length;i++){
+    const t = line + words[i] + ' ';
+    if (ctx.measureText(t).width > maxW && i>0){ lines.push(line.trim()); line = words[i] + ' '; }
+    else line = t;
+  }
+  lines.push(line.trim()); const total=(lines.length-1)*lh;
+  lines.forEach((l,i)=> ctx.fillText(l, x, y - total/2 + i*lh));
+}
+drawWheel();
+
+/* סיבוב מיושר לחץ – עובד מצוין גם במסכי מגע */
+const rotor = document.getElementById('rotor');
+rotor.style.transitionDuration = CONFIG.durationSec + 's';
+let spun = false;
+
+function spin(){
+  if(spun) return; spun = true;
+  const index = Math.floor(Math.random()*count);
+  const centerAngle = -90 + (index + 0.5) * segAngle;
+  const full = CONFIG.spins * 360;
+  const targetRotation = full - 90 - centerAngle; // מיושר לחץ
+  requestAnimationFrame(()=>{ rotor.style.transform = `rotate(${targetRotation}deg)`; });
+  rotor.addEventListener('transitionend', ()=>{
+    document.getElementById('mcoupon').textContent = CONFIG.prizes[index].coupon;
+    document.getElementById('modal').classList.add('show');
+  }, { once:true });
+}
+
+/* אוטו-ספין ו—טאפ ידני לגיבוי */
+window.addEventListener('load', ()=>{ setTimeout(spin, 120); }, {once:true});
+document.querySelector('.wheel-wrap').addEventListener('click', ()=>{ if(!spun) spin(); }, {passive:true});
 </script>
-
 </body>
 </html>
