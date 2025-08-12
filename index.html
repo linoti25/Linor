@@ -6,19 +6,17 @@
 <title>גלגל מזל | קבלי את ההטבה</title>
 <style>
   :root{
-    /* גודל גלגל דינמי: בין 280px ל-560px, לפי רוחב המסך */
-    --size: clamp(280px, 85vw, 560px);
+    --size: clamp(300px, 88vw, 620px);
     --bg:#0b0b0b; --ink:#fff; --pink:#ff4f87; --white:#fff; --pointer:#000;
     --shadow:0 14px 36px rgba(0,0,0,.35);
   }
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Heebo,Assistant,system-ui,-apple-system,Segoe UI,Roboto,Arial}
-  .wrap{min-height:100svh;display:grid;place-items:center;padding:clamp(10px,4vw,22px)}
-  .card{background:#111;border-radius:16px;box-shadow:var(--shadow);padding:clamp(12px,3.5vw,18px);max-width:min(94vw,920px)}
+  .wrap{min-height:100svh;display:grid;place-items:center;padding:clamp(10px,4vw,24px)}
+  .card{background:#111;border-radius:16px;box-shadow:var(--shadow);padding:clamp(12px,3.5vw,20px);max-width:min(94vw,920px)}
   h1{margin:0 0 6px;font-size:clamp(18px,4.5vw,28px)}
   p.lead{margin:0 0 8px;opacity:.8;font-size:clamp(12px,3.5vw,16px)}
   .wheel-wrap{position:relative;width:var(--size);aspect-ratio:1/1;display:grid;place-items:center;margin-top:6px}
   canvas{width:100%;height:100%;display:block}
-  /* חץ גדול יותר לנייד */
   .pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);
            width:0;height:0;border-left:clamp(10px,2.8vw,18px) solid transparent;
            border-right:clamp(10px,2.8vw,18px) solid transparent;
@@ -28,8 +26,6 @@
        width:clamp(10px,2.8vw,14px);height:clamp(10px,2.8vw,14px);border-radius:50%;
        background:#fff;border:3px solid var(--pointer);z-index:7}
   .rotor{transition:transform 6.2s cubic-bezier(.12,.11,0,1)}
-
-  /* מודאל */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:clamp(8px,3vw,16px)}
   .modal.show{display:flex}
   .modal .box{background:#1a1a1a;color:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.5);
@@ -38,7 +34,7 @@
   .desc{opacity:.95;margin:0 0 10px;font-size:clamp(14px,4vw,18px)}
   .coupon{display:inline-block;margin:6px 0 2px;padding:clamp(8px,2.6vw,10px) clamp(12px,3.6vw,16px);
           border:2px dashed var(--pink);border-radius:12px;font-weight:800;letter-spacing:.5px;
-          color:var(--pink);background:#2a2a2a;font-size:clamp(16px,5vw,20px)}
+          color:var(--pink);background:#2a2a2a;font-size:clamp(18px,5.5vw,22px)}
 </style>
 </head>
 <body>
@@ -54,7 +50,6 @@
     </div>
   </div>
 
-  <!-- מודאל -->
   <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle">
     <div class="box">
       <div id="mtitle" class="title">זכית !</div>
@@ -64,9 +59,7 @@
   </div>
 
 <script>
-/* ===== קונפיג – מותאם מובייל/דסקטופ ===== */
 const CONFIG = {
-  // הקנבס מקבל פיזית 760px (חד ומדויק), אבל ה-CSS מכווץ/מגדיל לפי --size
   wheelSize: 760,
   spins: 6,
   durationSec: 6.2,
@@ -95,42 +88,48 @@ const radius = size/2 - 14;
 const count = CONFIG.prizes.length;
 const segAngle = 360 / count;
 
-/* ציור */
 function drawWheel(){
   ctx.clearRect(0,0,size,size);
   ctx.save(); ctx.translate(center, center);
+
   for(let i=0;i<count;i++){
     const startDeg = -90 + i*segAngle;
-    const endDeg = startDeg + segAngle;
+    const endDeg   = startDeg + segAngle;
     const start = startDeg*Math.PI/180, end = endDeg*Math.PI/180;
 
-    // פלח
     ctx.beginPath(); ctx.moveTo(0,0);
     ctx.fillStyle = (CONFIG.prizes[i].color === "white") ? "#ffffff" : "#ff4f87";
     ctx.arc(0,0,radius,start,end,false);
     ctx.closePath(); ctx.fill();
 
-    // קו גבול
     ctx.beginPath(); ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 2;
     ctx.arc(0,0,radius,start,end,false); ctx.stroke();
 
-    // טקסט – גודל דינמי למובייל
     const mid = startDeg + segAngle/2;
     const tx = Math.cos(mid*Math.PI/180)*(radius*0.66);
     const ty = Math.sin(mid*Math.PI/180)*(radius*0.66);
     ctx.save(); ctx.translate(tx,ty); ctx.rotate((mid+90)*Math.PI/180);
+    const fontPx = Math.max(16, Math.min(28, window.innerWidth * 0.06));
     ctx.fillStyle = (CONFIG.prizes[i].color === "white") ? "#000" : "#fff";
-    const fontPx = Math.max(14, Math.min(22, (window.innerWidth/24))); // 14–22px
     ctx.font = `800 ${fontPx}px Heebo, Arial`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    wrap(ctx, CONFIG.prizes[i].label, 0, 0, radius*0.46, fontPx*1.15);
+    wrap(ctx, CONFIG.prizes[i].label, 0, 0, radius*0.48, fontPx*1.18);
     ctx.restore();
   }
-  // מרכז
+
+  // מרכז עם טקסט "לחצו עליי"
   ctx.beginPath(); ctx.arc(0,0,radius*0.18,0,Math.PI*2);
-  ctx.fillStyle = '#111'; ctx.fill(); ctx.lineWidth=4; ctx.strokeStyle='#000'; ctx.stroke();
+  ctx.fillStyle = '#111'; ctx.fill();
+  ctx.lineWidth=4; ctx.strokeStyle='#000'; ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${Math.max(12, Math.min(18, window.innerWidth * 0.04))}px Heebo, Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('לחצו עליי', 0, 0);
+
   ctx.restore();
 }
+
 function wrap(ctx, text, x, y, maxW, lh){
   const words = text.split(' '); let line='', lines=[];
   for (let i=0;i<words.length;i++){
@@ -141,9 +140,9 @@ function wrap(ctx, text, x, y, maxW, lh){
   lines.push(line.trim()); const total=(lines.length-1)*lh;
   lines.forEach((l,i)=> ctx.fillText(l, x, y - total/2 + i*lh));
 }
+
 drawWheel();
 
-/* סיבוב מיושר לחץ – עובד מצוין גם במסכי מגע */
 const rotor = document.getElementById('rotor');
 rotor.style.transitionDuration = CONFIG.durationSec + 's';
 let spun = false;
@@ -153,7 +152,7 @@ function spin(){
   const index = Math.floor(Math.random()*count);
   const centerAngle = -90 + (index + 0.5) * segAngle;
   const full = CONFIG.spins * 360;
-  const targetRotation = full - 90 - centerAngle; // מיושר לחץ
+  const targetRotation = full - 90 - centerAngle;
   requestAnimationFrame(()=>{ rotor.style.transform = `rotate(${targetRotation}deg)`; });
   rotor.addEventListener('transitionend', ()=>{
     document.getElementById('mcoupon').textContent = CONFIG.prizes[index].coupon;
@@ -161,9 +160,9 @@ function spin(){
   }, { once:true });
 }
 
-/* אוטו-ספין ו—טאפ ידני לגיבוי */
 window.addEventListener('load', ()=>{ setTimeout(spin, 120); }, {once:true});
 document.querySelector('.wheel-wrap').addEventListener('click', ()=>{ if(!spun) spin(); }, {passive:true});
+window.addEventListener('resize', ()=>{ drawWheel(); }, {passive:true});
 </script>
 </body>
 </html>
