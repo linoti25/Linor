@@ -109,7 +109,7 @@ function drawWheel(){
     const tx = Math.cos(mid*Math.PI/180)*(radius*0.66);
     const ty = Math.sin(mid*Math.PI/180)*(radius*0.66);
     ctx.save(); ctx.translate(tx,ty); ctx.rotate((mid+90)*Math.PI/180);
-    const fontPx = Math.max(22, Math.min(38, window.innerWidth * 0.085)); // ← כתב מוגדל
+    const fontPx = Math.max(22, Math.min(38, window.innerWidth * 0.085));
     ctx.fillStyle = (CONFIG.prizes[i].color === "white") ? "#000" : "#fff";
     ctx.font = `800 ${fontPx}px Heebo, Arial`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -117,15 +117,23 @@ function drawWheel(){
     ctx.restore();
   }
 
-  // מרכז עם טקסט "לחצו עליי" מוגדל
-  ctx.beginPath(); ctx.arc(0,0,radius*0.18,0,Math.PI*2);
-  ctx.fillStyle = '#111'; ctx.fill();
-  ctx.lineWidth=4; ctx.strokeStyle='#000'; ctx.stroke();
+  // מרכז עם טקסט "לחצו עליי" מוגדל + הצללה
+  ctx.beginPath();
+  ctx.arc(0,0,radius*0.18,0,Math.PI*2);
+  ctx.fillStyle = '#111';
+  ctx.fill();
+  ctx.lineWidth=4;
+  ctx.strokeStyle='#000';
+  ctx.stroke();
+
   ctx.fillStyle = '#fff';
-  ctx.font = `bold ${Math.max(26, Math.min(38, window.innerWidth * 0.08))}px Heebo, Arial`;
+  ctx.shadowColor = 'rgba(255,255,255,0.8)';
+  ctx.shadowBlur = 6;
+  ctx.font = `bold ${Math.max(34, Math.min(52, window.innerWidth * 0.11))}px Heebo, Arial`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('לחצו עליי', 0, 0);
+  ctx.shadowBlur = 0;
 
   ctx.restore();
 }
@@ -166,9 +174,3 @@ window.addEventListener('resize', ()=>{ drawWheel(); }, {passive:true});
 </script>
 </body>
 </html>
-
-
-
-
-
-
